@@ -62,9 +62,14 @@ app.get("/public-url", (req, res) => {
 });
 
 app.all("/twiml", (req, res) => {
+  // --- この一行を追加 ---
+  console.log("--- RECEIVED TWIML REQUEST ---"); 
+  
   const wsUrl = new URL(PUBLIC_URL);
   wsUrl.protocol = "wss:";
   wsUrl.pathname = `/call`;
+
+  console.log(`[Twiml Response] Target WebSocket URL: ${wsUrl.toString()}`); // 宛先の確認ログ
 
   const twimlContent = twimlTemplate.replace("{{WS_URL}}", wsUrl.toString());
   res.type("text/xml").send(twimlContent);
