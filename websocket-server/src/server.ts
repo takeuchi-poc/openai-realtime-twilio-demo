@@ -33,18 +33,22 @@ const wss = new WebSocketServer({ noServer: true });
 // 【重要】App Runnerからの「接続切り替え(Upgrade)要求」をここで直接捕まえる
 server.on('upgrade', (request, socket, head) => {
   const url = new URL(request.url || "", `http://${request.headers.host}`);
-  console.log(`[Upgrade Request] Path: ${url.pathname}`); // ログで接続を確認できる
+  const pathname = url.pathname;
 
-  if (url.pathname === '/call') {
+  console.log(`[Upgrade Request] Path: ${pathname}`); // これでログに何が来ているか見えるようになります
+
+  // pathname === '/call' を pathname.includes('call') に変更
+  if (pathname.includes('call')) {
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
     });
-  } else if (url.pathname === '/logs') {
+  } else if (pathname.includes('logs')) {
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
     });
   } else {
-    socket.destroy(); // 関係ないパスは切断
+    console.log(`[Upgrade Denied] Unknown path: ${pathname}`);
+    socket.destroy();
   }
 });
 
