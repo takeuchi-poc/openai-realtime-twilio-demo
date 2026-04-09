@@ -123,6 +123,10 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// "0.0.0.0" を追加して、外の世界からの接続を許可する
+// server.listen(PORT, () => {
+//   console.log(`Server running on http://localhost:${PORT}`);
+// });
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
