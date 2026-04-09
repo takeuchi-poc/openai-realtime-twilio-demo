@@ -61,17 +61,36 @@ app.get("/public-url", (req, res) => {
   res.json({ publicUrl: PUBLIC_URL });
 });
 
+/* 
 app.all("/twiml", (req, res) => {
   // --- この一行を追加 ---
   console.log("--- RECEIVED TWIML REQUEST ---"); 
+
+    // プロトコル(https://)があってもなくても、ドメイン部分だけを抽出する安全な書き方
+  const domain = PUBLIC_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const wsUrl = `wss://${domain}/call`;
+
   
-  const wsUrl = new URL(PUBLIC_URL);
   wsUrl.protocol = "wss:";
   wsUrl.pathname = `/call`;
 
   console.log(`[Twiml Response] Target WebSocket URL: ${wsUrl.toString()}`); // 宛先の確認ログ
 
   const twimlContent = twimlTemplate.replace("{{WS_URL}}", wsUrl.toString());
+  res.type("text/xml").send(twimlContent);
+});
+*/
+
+app.all("/twiml", (req, res) => {
+  console.log("--- RECEIVED TWIML REQUEST ---");
+
+  // プロトコル(https://)があってもなくても、ドメイン部分だけを抽出する安全な書き方
+  const domain = PUBLIC_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const wsUrl = `wss://${domain}/call`;
+
+  console.log(`[Twiml Response] Target: ${wsUrl}`);
+
+  const twimlContent = twimlTemplate.replace("{{WS_URL}}", wsUrl);
   res.type("text/xml").send(twimlContent);
 });
 
