@@ -26,7 +26,27 @@ if (!OPENAI_API_KEY) {
 const app = express();
 app.use(cors());
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+// 1. WebSocketServerの作成（server: server を削除し、noServer: true にする）
+//const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ noServer: true });
+
+// 【重要】App Runnerからの「接続切り替え(Upgrade)要求」をここで直接捕まえる
+server.on('upgrade', (request, socket, head) => {
+  const url = new URL(request.url || "", `http://${request.headers.host}`);
+  console.log(`[Upgrade Request] Path: ${url.pathname}`); // ログで接続を確認できる
+
+  if (url.pathname === '/call') {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else if (url.pathname === '/logs') {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy(); // 関係ないパスは切断
+  }
+});
 
 app.use(express.urlencoded({ extended: false }));
 
@@ -54,6 +74,7 @@ app.get("/tools", (req, res) => {
 let currentCall: WebSocket | null = null;
 let currentLogs: WebSocket | null = null;
 
+/* 変更前
 wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
   const url = new URL(req.url || "", `http://${req.headers.host}`);
   const parts = url.pathname.split("/").filter(Boolean);
@@ -75,6 +96,26 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     handleFrontendConnection(currentLogs);
   } else {
     ws.close();
+  }
+});
+*/
+
+// --- 修正後：wss.on("connection") 内 ---
+wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+  const url = new URL(req.url || "", `http://${req.headers.host}`);
+  const parts = url.pathname.split("/").filter(Boolean);
+  const type = parts[0];
+
+  console.log(`[WebSocket] Connected. Type: ${type}`);
+
+  if (type === "call") {
+    if (currentCall) currentCall.close();
+    currentCall = ws;
+    handleCallConnection(currentCall, OPENAI_API_KEY);
+  } else if (type === "logs") {
+    if (currentLogs) currentLogs.close();
+    currentLogs = ws;
+    handleFrontendConnection(currentLogs);
   }
 });
 
